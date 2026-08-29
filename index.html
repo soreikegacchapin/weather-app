@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>お天気アプリ</title>
+<style>
+  :root {
+    --bg-top: #4a90d9;
+    --bg-bottom: #8ec5ea;
+    --card-bg: rgba(255, 255, 255, 0.16);
+    --card-border: rgba(255, 255, 255, 0.35);
+    --text-main: #ffffff;
+    --text-sub: rgba(255, 255, 255, 0.85);
+    --accent: #ffffff;
+  }
+
+  * {
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  html, body {
+    height: 100%;
+  }
+
+  body {
+    margin: 0;
+    font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic",
+      "Meiryo", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 16px;
+    background: linear-gradient(160deg, var(--bg-top) 0%, var(--bg-bottom) 55%, #d7ecfb 100%);
+    background-attachment: fixed;
+    transition: background 0.8s ease;
+    color: var(--text-main);
+  }
+
+  body.weather-clear   { background: linear-gradient(160deg, #4a90d9 0%, #8ec5ea 55%, #d7ecfb 100%); }
+  body.weather-cloudy  { background: linear-gradient(160deg, #6b7c93 0%, #9aa9bd 55%, #cfd8e3 100%); }
+  body.weather-rain    { background: linear-gradient(160deg, #37475a 0%, #5b7188 55%, #8fa3b8 100%); }
+  body.weather-snow    { background: linear-gradient(160deg, #7f97ad 0%, #aebfd2 55%, #eef3f8 100%); }
+  body.weather-storm   { background: linear-gradient(160deg, #2b2f45 0%, #4a4f6b 55%, #7a7f9e 100%); }
+  body.weather-fog     { background: linear-gradient(160deg, #74808c 0%, #a3adb6 55%, #dbe0e4 100%); }
+
+  .app {
+    width: 100%;
+    max-width: 440px;
+  }
+
+  .card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 28px;
+    padding: 28px 24px 24px;
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+  }
+
+  .app-title {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    color: var(--text-sub);
+    margin: 0 0 18px;
+    text-transform: uppercase;
+  }
+
+  .city-tabs {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-bottom: 22px;
+  }
+
+  .city-tab {
+    appearance: none;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    background: rgba(255, 255, 255, 0.12);
+    color: var(--text-main);
+    font-size: 13.5px;
+    font-weight: 600;
+    padding: 10px 4px;
+    border-radius: 14px;
+    cursor: pointer;
+    transition: background 0.25s ease, transform 0.15s ease, box-shadow 0.25s ease;
+    white-space: nowrap;
+    font-family: inherit;
+  }
+
+  .city-tab:active {
+    transform: scale(0.96);
+  }
+
+  .city-tab.active {
+    background: rgba(255, 255, 255, 0.92);
+    color: #2c5c8f;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+    border-color: transparent;
+  }
+
+  .main-info {
+    text-align: center;
+    padding: 6px 0 10px;
+    min-height: 230px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .city-name {
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 4px;
+    letter-spacing: 0.02em;
+  }
+
+  .date-line {
+    font-size: 13px;
+    color: var(--text-sub);
+    margin-bottom: 14px;
+  }
+
+  .weather-emoji {
+    font-size: 84px;
+    line-height: 1;
+    margin-bottom: 6px;
+    filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.2));
+  }
+
+  .temp {
+    font-size: 64px;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: -0.02em;
+    margin-bottom: 4px;
+  }
+
+  .temp sup {
+    font-size: 30px;
+    font-weight: 500;
+    vertical-align: super;
+    margin-left: 2px;
+  }
+
+  .weather-desc {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 2px;
+  }
+
+  .feels-like {
+    font-size: 13px;
+    color: var(--text-sub);
+  }
+
+  .sub-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-top: 20px;
+  }
+
+  .stat-box {
+    background: rgba(255, 255, 255, 0.14);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: 16px;
+    padding: 12px 6px;
+    text-align: center;
+  }
+
+  .stat-label {
+    font-size: 11px;
+    color: var(--text-sub);
+    margin-bottom: 4px;
+    letter-spacing: 0.03em;
+  }
+
+  .stat-value {
+    font-size: 16px;
+    font-weight: 700;
+  }
+
+  .stat-value .unit {
+    font-size: 11px;
+    font-weight: 500;
+    margin-left: 1px;
+  }
+
+  .updated {
+    text-align: center;
+    font-size: 11.5px;
+    color: var(--text-sub);
+    margin-top: 18px;
+  }
+
+  .status-msg {
+    text-align: center;
+    font-size: 14px;
+    color: var(--text-sub);
+    padding: 40px 0;
+  }
+
+  .spinner {
+    width: 34px;
+    height: 34px;
+    margin: 0 auto 14px;
+    border: 3px solid rgba(255, 255, 255, 0.35);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.9s linear infinite;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  .fade-in {
+    animation: fadeIn 0.45s ease;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .error-box {
+    text-align: center;
+    padding: 30px 10px;
+  }
+
+  .error-box p {
+    font-size: 14px;
+    color: var(--text-sub);
+    margin: 10px 0 16px;
+  }
+
+  .retry-btn {
+    appearance: none;
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    background: rgba(255, 255, 255, 0.15);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 8px 20px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+
+  footer.credit {
+    text-align: center;
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.55);
+    margin-top: 14px;
+  }
+
+  @media (max-width: 360px) {
+    .weather-emoji { font-size: 68px; }
+    .temp { font-size: 52px; }
+    .card { padding: 22px 16px 18px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="card">
+    <p class="app-title">🌤️ お天気アプリ</p>
+
+    <div class="city-tabs" id="cityTabs"></div>
+
+    <div id="content">
+      <div class="status-msg">
+        <div class="spinner"></div>
+        読み込み中です…
+      </div>
+    </div>
+  </div>
+  <footer class="credit">データ提供: Open-Meteo</footer>
+</div>
+
+<script>
+  const CITIES = [
+    { key: "kasaoka", name: "笠岡市", lat: 34.4933, lon: 133.5008 },
+    { key: "higashihiroshima", name: "東広島市", lat: 34.4262, lon: 132.7444 },
+    { key: "kurashiki", name: "倉敷市", lat: 34.5850, lon: 133.7722 }
+  ];
+
+  // WMO weather code -> { emoji, label, bodyClass }
+  const WEATHER_MAP = {
+    0:  { emoji: "☀️", label: "晴れ",           cls: "clear" },
+    1:  { emoji: "🌤️", label: "晴れ",           cls: "clear" },
+    2:  { emoji: "⛅",  label: "晴れ時々くもり", cls: "cloudy" },
+    3:  { emoji: "☁️", label: "くもり",         cls: "cloudy" },
+    45: { emoji: "🌫️", label: "霧",             cls: "fog" },
+    48: { emoji: "🌫️", label: "霧",             cls: "fog" },
+    51: { emoji: "🌦️", label: "小雨",           cls: "rain" },
+    53: { emoji: "🌦️", label: "小雨",           cls: "rain" },
+    55: { emoji: "🌧️", label: "小雨",           cls: "rain" },
+    56: { emoji: "🌧️", label: "着氷性の霧雨",   cls: "rain" },
+    57: { emoji: "🌧️", label: "着氷性の霧雨",   cls: "rain" },
+    61: { emoji: "🌧️", label: "雨",             cls: "rain" },
+    63: { emoji: "🌧️", label: "雨",             cls: "rain" },
+    65: { emoji: "🌧️", label: "大雨",           cls: "rain" },
+    66: { emoji: "🌧️", label: "着氷性の雨",     cls: "rain" },
+    67: { emoji: "🌧️", label: "着氷性の雨",     cls: "rain" },
+    71: { emoji: "🌨️", label: "雪",             cls: "snow" },
+    73: { emoji: "🌨️", label: "雪",             cls: "snow" },
+    75: { emoji: "❄️",  label: "大雪",           cls: "snow" },
+    77: { emoji: "🌨️", label: "雪",             cls: "snow" },
+    80: { emoji: "🌦️", label: "にわか雨",       cls: "rain" },
+    81: { emoji: "🌧️", label: "にわか雨",       cls: "rain" },
+    82: { emoji: "⛈️", label: "激しいにわか雨", cls: "storm" },
+    85: { emoji: "🌨️", label: "にわか雪",       cls: "snow" },
+    86: { emoji: "❄️",  label: "大雪",           cls: "snow" },
+    95: { emoji: "⛈️", label: "雷雨",           cls: "storm" },
+    96: { emoji: "⛈️", label: "雷雨（ひょう）", cls: "storm" },
+    99: { emoji: "⛈️", label: "雷雨（ひょう）", cls: "storm" }
+  };
+
+  function weatherInfo(code) {
+    return WEATHER_MAP[code] || { emoji: "❔", label: "不明", cls: "clear" };
+  }
+
+  const contentEl = document.getElementById("content");
+  const tabsEl = document.getElementById("cityTabs");
+  let currentCity = CITIES[0].key;
+  const cache = {};
+
+  function renderTabs() {
+    tabsEl.innerHTML = "";
+    CITIES.forEach(city => {
+      const btn = document.createElement("button");
+      btn.className = "city-tab" + (city.key === currentCity ? " active" : "");
+      btn.textContent = city.name;
+      btn.addEventListener("click", () => {
+        if (city.key === currentCity) return;
+        currentCity = city.key;
+        renderTabs();
+        loadCity(city);
+      });
+      tabsEl.appendChild(btn);
+    });
+  }
+
+  function setBodyWeatherClass(cls) {
+    document.body.className = "weather-" + cls;
+  }
+
+  function formatDate(d) {
+    const days = ["日", "月", "火", "水", "木", "金", "土"];
+    return `${d.getMonth() + 1}月${d.getDate()}日（${days[d.getDay()]}）`;
+  }
+
+  function formatTime(d) {
+    const hh = String(d.getHours()).padStart(2, "0");
+    const mm = String(d.getMinutes()).padStart(2, "0");
+    return `${hh}:${mm}`;
+  }
+
+  function showLoading() {
+    contentEl.innerHTML = `
+      <div class="status-msg">
+        <div class="spinner"></div>
+        読み込み中です…
+      </div>
+    `;
+  }
+
+  function showError(city) {
+    contentEl.innerHTML = `
+      <div class="error-box fade-in">
+        <div class="weather-emoji">⚠️</div>
+        <p>天気情報を取得できませんでした。<br>通信環境をご確認のうえ、もう一度お試しください。</p>
+        <button class="retry-btn" id="retryBtn">再読み込み</button>
+      </div>
+    `;
+    document.getElementById("retryBtn").addEventListener("click", () => loadCity(city, true));
+  }
+
+  function renderWeather(city, data) {
+    const current = data.current;
+    const daily = data.daily;
+    const info = weatherInfo(current.weather_code);
+    setBodyWeatherClass(info.cls);
+
+    const now = new Date(current.time.replace(" ", "T"));
+    const temp = Math.round(current.temperature_2m);
+    const feels = Math.round(current.apparent_temperature);
+    const humidity = Math.round(current.relative_humidity_2m);
+    const wind = Math.round(current.wind_speed_10m);
+    const tMax = daily && daily.temperature_2m_max ? Math.round(daily.temperature_2m_max[0]) : null;
+    const tMin = daily && daily.temperature_2m_min ? Math.round(daily.temperature_2m_min[0]) : null;
+
+    contentEl.innerHTML = `
+      <div class="main-info fade-in">
+        <div class="city-name">${city.name}</div>
+        <div class="date-line">${formatDate(now)}</div>
+        <div class="weather-emoji">${info.emoji}</div>
+        <div class="temp">${temp}<sup>°C</sup></div>
+        <div class="weather-desc">${info.label}</div>
+        <div class="feels-like">体感 ${feels}℃${tMax !== null ? ` ／ 最高 ${tMax}℃ 最低 ${tMin}℃` : ""}</div>
+
+        <div class="sub-stats">
+          <div class="stat-box">
+            <div class="stat-label">湿度</div>
+            <div class="stat-value">${humidity}<span class="unit">%</span></div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">風速</div>
+            <div class="stat-value">${wind}<span class="unit">km/h</span></div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">体感</div>
+            <div class="stat-value">${feels}<span class="unit">℃</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="updated">最終更新：${formatTime(new Date())}</div>
+    `;
+  }
+
+  async function loadCity(city, forceReload) {
+    if (currentCity !== city.key) return;
+    if (!forceReload && cache[city.key]) {
+      renderWeather(city, cache[city.key]);
+      return;
+    }
+    showLoading();
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${city.lat}&longitude=${city.lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m&daily=temperature_2m_max,temperature_2m_min&timezone=Asia%2FTokyo`;
+    try {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error("network error");
+      const data = await res.json();
+      cache[city.key] = data;
+      if (currentCity === city.key) {
+        renderWeather(city, data);
+      }
+    } catch (e) {
+      if (currentCity === city.key) {
+        showError(city);
+      }
+    }
+  }
+
+  renderTabs();
+  loadCity(CITIES[0]);
+</script>
+
+</body>
+</html>
