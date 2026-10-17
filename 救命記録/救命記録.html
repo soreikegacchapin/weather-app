@@ -1,0 +1,1192 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="theme-color" content="#121214">
+<title>救命処置ナビ＆記録</title>
+<style>
+  :root {
+    --bg: #121214;
+    --panel: #1e1e22;
+    --panel-2: #2a2a30;
+    --line: #3a3a42;
+    --text: #f4f4f6;
+    --sub: #a8a8b3;
+    --red: #e53935;
+    --red-dark: #b71c1c;
+    --yellow: #ffca28;
+    --green: #43a047;
+    --blue: #42a5f5;
+  }
+
+  * {
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  html, body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic",
+      "Meiryo", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+
+  body {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 0 12px 120px;
+  }
+
+  button {
+    font: inherit;
+    color: inherit;
+    border: none;
+    cursor: pointer;
+  }
+
+  .hidden { display: none !important; }
+
+  /* ---------- 開始画面 ---------- */
+  #intro {
+    padding: 24px 4px;
+  }
+  #intro h1 {
+    font-size: 26px;
+    margin: 8px 0 4px;
+  }
+  #intro .lead {
+    color: var(--sub);
+    margin: 0 0 20px;
+    line-height: 1.6;
+  }
+  .notice {
+    background: var(--panel);
+    border-left: 4px solid var(--yellow);
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-size: 14px;
+    line-height: 1.7;
+    margin-bottom: 16px;
+  }
+  .notice b { color: var(--yellow); }
+  .opt {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--panel);
+    border-radius: 10px;
+    padding: 14px;
+    margin-bottom: 10px;
+    font-size: 16px;
+  }
+  .opt input { width: 22px; height: 22px; accent-color: var(--red); }
+  #startBtn {
+    width: 100%;
+    background: var(--red);
+    font-size: 24px;
+    font-weight: bold;
+    padding: 22px;
+    border-radius: 16px;
+    margin-top: 10px;
+    box-shadow: 0 6px 20px rgba(229, 57, 53, 0.4);
+  }
+  #startBtn:active { background: var(--red-dark); }
+  #prevLog {
+    width: 100%;
+    margin-top: 14px;
+    background: var(--panel-2);
+    padding: 12px;
+    border-radius: 10px;
+    font-size: 14px;
+    color: var(--sub);
+  }
+
+  /* ---------- 上部バー ---------- */
+  #topbar {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: var(--bg);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 0 8px;
+    border-bottom: 1px solid var(--line);
+  }
+  #rec {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: bold;
+    color: var(--sub);
+  }
+  #rec .dot {
+    width: 12px; height: 12px; border-radius: 50%;
+    background: #555;
+  }
+  #rec.on { color: var(--red); }
+  #rec.on .dot { background: var(--red); animation: blink 1s infinite; }
+  @keyframes blink { 50% { opacity: 0.2; } }
+  #elapsed {
+    flex: 1;
+    text-align: center;
+    font-size: 30px;
+    font-weight: bold;
+    font-variant-numeric: tabular-nums;
+  }
+  #clock {
+    font-size: 13px;
+    color: var(--sub);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ---------- カメラ ---------- */
+  #camWrap {
+    margin-top: 10px;
+    position: relative;
+    background: #000;
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  #canvas {
+    display: block;
+    width: 100%;
+    height: auto;
+    max-height: 34vh;
+    object-fit: contain;
+  }
+  #camMsg {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 12px;
+    font-size: 14px;
+    color: var(--sub);
+    pointer-events: none;
+  }
+  .camBtns {
+    position: absolute;
+    right: 8px;
+    bottom: 8px;
+    display: flex;
+    gap: 6px;
+  }
+  .camBtns button {
+    background: rgba(0, 0, 0, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-size: 13px;
+  }
+
+  /* ---------- 手順カード ---------- */
+  #stepCard {
+    margin-top: 12px;
+    background: var(--panel);
+    border-radius: 14px;
+    padding: 16px;
+  }
+  #stepNo {
+    font-size: 13px;
+    color: var(--sub);
+  }
+  #stepTitle {
+    font-size: 24px;
+    margin: 4px 0 8px;
+  }
+  #stepBody {
+    font-size: 16px;
+    line-height: 1.75;
+    margin: 0 0 14px;
+  }
+  #stepBody b { color: var(--yellow); }
+  #stepBtns {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .stepBtn {
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 16px;
+    font-size: 18px;
+    font-weight: bold;
+    text-align: center;
+    text-decoration: none;
+    color: var(--text);
+    display: block;
+  }
+  .stepBtn.danger { background: var(--red); border-color: var(--red); }
+  .stepBtn.tel { background: #1b5e20; border-color: var(--green); }
+  .stepBtn:active { filter: brightness(0.85); }
+
+  /* ---------- 胸骨圧迫パネル ---------- */
+  #cprPanel {
+    margin-top: 12px;
+    background: var(--panel);
+    border-radius: 14px;
+    padding: 14px;
+  }
+  .cprRow {
+    display: flex;
+    gap: 10px;
+    align-items: stretch;
+  }
+  #beat {
+    width: 96px;
+    height: 96px;
+    flex: none;
+    border-radius: 50%;
+    background: var(--panel-2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    font-weight: bold;
+    transition: transform 0.06s, background 0.06s;
+  }
+  #beat.pulse { transform: scale(1.12); background: var(--red); }
+  #beatCount { font-size: 30px; font-variant-numeric: tabular-nums; }
+  #beatLabel { font-size: 11px; color: var(--sub); }
+  #cprStatus {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 2px;
+  }
+  #cprState { font-size: 15px; color: var(--sub); }
+  #cprTimer {
+    font-size: 34px;
+    font-weight: bold;
+    font-variant-numeric: tabular-nums;
+  }
+  #cprHint { font-size: 13px; color: var(--sub); }
+  #cprPanel.compressing #cprState { color: var(--red); font-weight: bold; }
+  #cprPanel.paused #cprTimer { color: var(--yellow); }
+  #cprPanel.over #cprHint { color: var(--yellow); font-weight: bold; }
+  .toggles {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    margin-top: 12px;
+    font-size: 14px;
+    color: var(--sub);
+  }
+  .toggles label { display: flex; align-items: center; gap: 6px; }
+  .toggles input { width: 18px; height: 18px; accent-color: var(--red); }
+
+  /* ---------- 記録ボタン ---------- */
+  h2 {
+    font-size: 15px;
+    color: var(--sub);
+    margin: 20px 0 8px;
+    font-weight: normal;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+  .act {
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 14px 6px;
+    font-size: 15px;
+    font-weight: bold;
+    line-height: 1.3;
+    min-height: 64px;
+  }
+  .act:active { filter: brightness(0.8); }
+  .act.red { background: var(--red); border-color: var(--red); }
+  .act.yellow { background: #5d4300; border-color: var(--yellow); color: #ffe082; }
+  .act.green { background: #1b5e20; border-color: var(--green); }
+  .act.blue { background: #0d3c61; border-color: var(--blue); }
+  .act.wide { grid-column: span 3; font-size: 20px; padding: 18px; }
+
+  details.aedHelp {
+    margin-top: 10px;
+    background: var(--panel);
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 14px;
+    line-height: 1.7;
+  }
+  details.aedHelp summary { cursor: pointer; color: var(--yellow); font-weight: bold; }
+  details.aedHelp ol { padding-left: 20px; margin: 8px 0 0; }
+
+  /* ---------- 記録一覧 ---------- */
+  #logList {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    background: var(--panel);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  #logList li {
+    display: flex;
+    gap: 10px;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--line);
+    font-size: 15px;
+  }
+  #logList li:last-child { border-bottom: none; }
+  #logList .t {
+    color: var(--sub);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    font-size: 13px;
+    padding-top: 2px;
+  }
+  #logList li.cancelled .l { text-decoration: line-through; color: var(--sub); }
+  #logList .empty { color: var(--sub); justify-content: center; }
+
+  /* ---------- 下部バー ---------- */
+  #bottombar {
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    background: rgba(18, 18, 20, 0.95);
+    border-top: 1px solid var(--line);
+    padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+  }
+  #bottombar .inner {
+    max-width: 720px;
+    margin: 0 auto;
+    display: flex;
+    gap: 8px;
+  }
+  #bottombar button {
+    flex: 1;
+    padding: 14px;
+    border-radius: 12px;
+    font-weight: bold;
+    font-size: 16px;
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+  }
+  #endBtn { background: #37474f !important; }
+
+  /* ---------- 終了画面 ---------- */
+  #done {
+    margin-top: 16px;
+    background: var(--panel);
+    border-radius: 14px;
+    padding: 16px;
+  }
+  #done h2 { color: var(--text); font-size: 20px; margin: 0 0 8px; font-weight: bold; }
+  #done p { color: var(--sub); font-size: 14px; line-height: 1.7; }
+  #done .stepBtn { margin-top: 8px; }
+  #playback { width: 100%; border-radius: 10px; margin-top: 8px; background: #000; }
+
+  /* ---------- トースト ---------- */
+  #toast {
+    position: fixed;
+    left: 50%;
+    top: 70px;
+    transform: translateX(-50%);
+    background: var(--yellow);
+    color: #000;
+    font-weight: bold;
+    padding: 12px 18px;
+    border-radius: 12px;
+    font-size: 16px;
+    z-index: 50;
+    max-width: 92vw;
+    text-align: center;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s;
+  }
+  #toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<!-- ===== 開始画面 ===== -->
+<section id="intro">
+  <h1>🚑 救命処置ナビ＆記録</h1>
+  <p class="lead">手順を案内しながら、行った処置の時刻を記録し、カメラで現場を撮影します。</p>
+
+  <div class="notice">
+    <b>まず119番通報を。</b>このアプリは救命処置の補助ツールです。119番の指令員の指示があれば、そちらを優先してください。<br>
+    手順は日本蘇生協議会（JRC）蘇生ガイドラインの市民向け一次救命処置をもとにしています。いざという時のために、講習の受講をおすすめします。
+  </div>
+
+  <label class="opt"><input type="checkbox" id="optCam" checked> カメラで撮影する（映像に時刻と記録を焼き込み）</label>
+  <label class="opt"><input type="checkbox" id="optMic" checked> 音声も録音する</label>
+  <label class="opt"><input type="checkbox" id="optSkip"> 手順案内をとばして胸骨圧迫から始める</label>
+
+  <button id="startBtn">開始する</button>
+  <button id="prevLog" class="hidden">前回の記録が残っています（テキストで保存）</button>
+</section>
+
+<!-- ===== 処置画面 ===== -->
+<section id="main" class="hidden">
+  <div id="topbar">
+    <div id="rec"><span class="dot"></span><span id="recText">撮影なし</span></div>
+    <div id="elapsed">00:00</div>
+    <div id="clock">--:--:--</div>
+  </div>
+
+  <div id="camWrap" class="hidden">
+    <canvas id="canvas" width="1280" height="720"></canvas>
+    <div id="camMsg">カメラを準備しています…</div>
+    <div class="camBtns">
+      <button id="flipBtn">カメラ切替</button>
+    </div>
+  </div>
+
+  <div id="stepCard">
+    <div id="stepNo"></div>
+    <h3 id="stepTitle"></h3>
+    <p id="stepBody"></p>
+    <div id="stepBtns"></div>
+  </div>
+
+  <div id="cprPanel">
+    <div class="cprRow">
+      <div id="beat"><span id="beatCount">–</span><span id="beatLabel">テンポ</span></div>
+      <div id="cprStatus">
+        <div id="cprState">胸骨圧迫：未開始</div>
+        <div id="cprTimer">0:00</div>
+        <div id="cprHint">胸の真ん中を 約5cm・1分間に100〜120回</div>
+      </div>
+    </div>
+    <div class="toggles">
+      <label><input type="checkbox" id="optMetro" checked> テンポ音（110回/分）</label>
+      <label><input type="checkbox" id="opt302"> 30:2 カウント（人工呼吸をする場合）</label>
+    </div>
+  </div>
+
+  <h2>処置を記録（押した時刻が記録されます）</h2>
+  <div class="grid">
+    <button class="act red wide" id="compressBtn">▶ 胸骨圧迫 開始</button>
+    <button class="act" data-log="人工呼吸 2回">人工呼吸<br>2回</button>
+    <button class="act" data-log="圧迫者を交代" data-act="swap">圧迫者<br>交代</button>
+    <button class="act green" data-log="119番通報">119番<br>通報</button>
+    <button class="act yellow" data-log="AED到着・電源ON">AED到着<br>電源ON</button>
+    <button class="act yellow" data-log="電極パッド装着">パッド<br>装着</button>
+    <button class="act yellow" data-log="AED解析中（全員離れる）" data-act="analyze">解析中<br>離れる</button>
+    <button class="act red" data-log="電気ショック実施" data-act="shock">⚡ ショック<br>実施</button>
+    <button class="act" data-log="ショック不要" data-act="noshock">ショック<br>不要</button>
+    <button class="act blue" data-log="救急隊到着・引継ぎ">救急隊<br>到着</button>
+    <button class="act green" data-log="反応・普段どおりの呼吸が戻った" data-act="rosc">反応・呼吸<br>が戻った</button>
+    <button class="act" data-act="memo">✏️ メモ</button>
+    <button class="act" data-act="undo">↩ 直前を<br>取消</button>
+  </div>
+
+  <details class="aedHelp">
+    <summary>AEDの使い方（タップで開く）</summary>
+    <ol>
+      <li>電源を入れる（ふたを開けると自動で入る機種も）。あとは音声に従う。</li>
+      <li>胸をはだけ、パッドの絵のとおりに右胸の上と左わき腹に貼る。濡れていたら拭く。貼り薬ははがす。</li>
+      <li>「解析中です」→ <b>誰も体に触れない</b>。</li>
+      <li>ショックの指示 →「離れて！」と声をかけ、誰も触れていないのを確認してボタンを押す。</li>
+      <li>ショック後・不要の場合も、<b>ただちに胸骨圧迫を再開</b>。パッドは貼ったまま。AEDは2分ごとに解析します。</li>
+    </ol>
+  </details>
+
+  <h2>記録</h2>
+  <ul id="logList"><li class="empty">まだ記録はありません</li></ul>
+
+  <div id="done" class="hidden">
+    <h2>記録を終了しました</h2>
+    <p>保存ボタンを押すと、端末に保存されます（インターネットには送信されません）。救急隊や医療機関に見せる場合にご利用ください。</p>
+    <button class="stepBtn danger hidden" id="saveVideo">🎥 動画を保存</button>
+    <button class="stepBtn" id="saveLog">📝 記録をテキストで保存</button>
+    <button class="stepBtn" id="copyLog">📋 記録をコピー</button>
+    <video id="playback" class="hidden" controls playsinline></video>
+    <button class="stepBtn" id="restart" style="margin-top:16px">はじめの画面にもどる</button>
+  </div>
+</section>
+
+<div id="bottombar" class="hidden">
+  <div class="inner">
+    <button id="endBtn">■ 記録を終了</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<video id="video" playsinline muted autoplay class="hidden"></video>
+
+<script>
+(() => {
+  const $ = (s) => document.querySelector(s);
+  const BPM = 110;
+  const CYCLE_SEC = 120;
+  const STORE_KEY = 'kyumei_last_log';
+
+  // ---------- 手順 ----------
+  const STEPS = {
+    safety: {
+      no: 1, title: '周囲の安全を確認',
+      body: '車の往来・火・落下物などの危険がないか確認します。危険な場所なら近づかず、119番通報を。',
+      btns: [{ label: '安全を確認した', log: '周囲の安全を確認', go: 'response' }]
+    },
+    response: {
+      no: 2, title: '反応を確認',
+      body: '肩をやさしくたたきながら、耳元で<b>「大丈夫ですか？」</b>と大きな声で呼びかけます。',
+      btns: [
+        { label: '反応なし／わからない', log: '反応なし', go: 'call', cls: 'danger' },
+        { label: '反応あり', log: '反応あり', go: 'observe' }
+      ]
+    },
+    call: {
+      no: 3, title: '助けを呼ぶ・119番・AED',
+      body: '「誰か来てください！」と大声で人を集め、<b>「あなたは119番を」「あなたはAEDを持ってきて」</b>と具体的に頼みます。一人なら自分で119番し、スピーカー通話にして指令員の指示に従います。<br><span style="color:var(--sub);font-size:14px">※このスマホで通話すると録画が止まる機種があります。できれば別の人の電話で。</span>',
+      btns: [
+        { label: '📞 119に電話する', tel: true, cls: 'tel' },
+        { label: '119番通報した', log: '119番通報', stay: true },
+        { label: 'AEDを依頼した', log: 'AEDを依頼', stay: true },
+        { label: '次へ（呼吸の確認）', go: 'breath', cls: 'danger' }
+      ]
+    },
+    breath: {
+      no: 4, title: '呼吸を確認（10秒以内）',
+      body: '胸とお腹の動きを見ます。<b>普段どおりの呼吸がない・よくわからない</b>ときは、すぐ胸骨圧迫へ。しゃくりあげるような途切れ途切れの呼吸は「呼吸なし」と判断します。',
+      btns: [
+        { label: '普段どおりの呼吸なし／わからない', log: '普段どおりの呼吸なし', go: 'cpr', cls: 'danger', startCompress: true },
+        { label: '普段どおりの呼吸あり', log: '普段どおりの呼吸あり', go: 'observe' }
+      ]
+    },
+    cpr: {
+      no: 5, title: '胸骨圧迫を続ける',
+      body: '胸の真ん中（胸骨の下半分）に手を重ね、<b>強く（約5cm）・速く（100〜120回/分）・絶え間なく</b>。毎回、胸を元の高さに戻します。人工呼吸ができる場合は 30回 ごとに 2回。<br>AEDが届いたら下のボタンで記録しながら音声に従います。<b>救急隊に引き継ぐまで</b>続けます。',
+      btns: []
+    },
+    observe: {
+      no: '—', title: '様子を見ながら救急隊を待つ',
+      body: '必要に応じて119番通報を。呼吸を観察し続け、<b>反応がない・普段どおりの呼吸がなくなった</b>ら、ただちに胸骨圧迫を始めます。吐きそうなときは体を横向きにします。',
+      btns: [
+        { label: '📞 119に電話する', tel: true, cls: 'tel' },
+        { label: '反応・呼吸がなくなった → 胸骨圧迫へ', log: '反応・呼吸なしを確認', go: 'cpr', cls: 'danger', startCompress: true }
+      ]
+    }
+  };
+
+  // ---------- 状態 ----------
+  let startAt = null;
+  let log = [];
+  let running = false;
+  let compressing = false;
+  let cycleStart = null;     // 今回の圧迫開始時刻
+  let pauseStart = null;     // 中断開始時刻
+  let cycleWarned = false;
+  let tickTimer = null;
+
+  // ---------- 便利関数 ----------
+  const pad = (n) => String(n).padStart(2, '0');
+  const fmtClock = (d) => `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+  const fmtDate = (d) => `${d.getFullYear()}/${pad(d.getMonth() + 1)}/${pad(d.getDate())}`;
+  const fmtDur = (ms) => {
+    const s = Math.max(0, Math.floor(ms / 1000));
+    const h = Math.floor(s / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    return (h ? h + ':' + pad(m) : pad(m)) + ':' + pad(s % 60);
+  };
+  const fmtShort = (ms) => {
+    const s = Math.max(0, Math.floor(ms / 1000));
+    return Math.floor(s / 60) + ':' + pad(s % 60);
+  };
+  const stamp = (d) =>
+    `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
+
+  let toastTimer = null;
+  function toast(msg, ms = 2500) {
+    const t = $('#toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), ms);
+  }
+
+  function vibrate(p) {
+    try { navigator.vibrate && navigator.vibrate(p); } catch (e) {}
+  }
+
+  // ---------- 音 ----------
+  let ac = null;
+  function ensureAudio() {
+    if (!ac) {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (AC) ac = new AC();
+    }
+    if (ac && ac.state === 'suspended') ac.resume();
+  }
+  function tone(at, freq, dur, vol = 0.35) {
+    if (!ac) return;
+    const o = ac.createOscillator();
+    const g = ac.createGain();
+    o.frequency.value = freq;
+    o.type = 'square';
+    g.gain.setValueAtTime(vol, at);
+    g.gain.exponentialRampToValueAtTime(0.001, at + dur);
+    o.connect(g).connect(ac.destination);
+    o.start(at);
+    o.stop(at + dur + 0.02);
+  }
+  function alertSound() {
+    if (!ac) return;
+    const t = ac.currentTime + 0.02;
+    tone(t, 880, 0.15, 0.5); tone(t + 0.2, 880, 0.15, 0.5); tone(t + 0.4, 1320, 0.3, 0.5);
+  }
+
+  // ---------- メトロノーム ----------
+  let metroTimer = null;
+  let nextBeat = 0;
+  let beatNo = 0;
+  function metroStart() {
+    if (metroTimer || !ac) return;
+    beatNo = 0;
+    nextBeat = ac.currentTime + 0.05;
+    metroTimer = setInterval(() => {
+      while (nextBeat < ac.currentTime + 0.15) {
+        beatNo++;
+        const use302 = $('#opt302').checked;
+        const n = use302 ? ((beatNo - 1) % 30) + 1 : beatNo;
+        tone(nextBeat, use302 && n === 30 ? 1500 : 1000, 0.04);
+        const delay = Math.max(0, (nextBeat - ac.currentTime) * 1000);
+        setTimeout(() => showBeat(n, use302), delay);
+        nextBeat += 60 / BPM;
+      }
+    }, 25);
+  }
+  function metroStop() {
+    clearInterval(metroTimer);
+    metroTimer = null;
+    $('#beatCount').textContent = '–';
+  }
+  function showBeat(n, use302) {
+    if (!metroTimer) return;
+    const b = $('#beat');
+    $('#beatCount').textContent = use302 ? n : '●';
+    $('#beatLabel').textContent = use302 ? (n === 30 ? '→人工呼吸2回' : '/ 30') : `${BPM}回/分`;
+    b.classList.add('pulse');
+    setTimeout(() => b.classList.remove('pulse'), 120);
+  }
+  function syncMetro() {
+    if (compressing && $('#optMetro').checked) metroStart();
+    else metroStop();
+  }
+
+  // ---------- 記録 ----------
+  function addLog(label, kind = '') {
+    const e = { t: Date.now(), label, kind };
+    log.push(e);
+    saveStore();
+    renderLog();
+    return e;
+  }
+  function saveStore() {
+    try {
+      localStorage.setItem(STORE_KEY, JSON.stringify({ startAt, log }));
+    } catch (e) {}
+  }
+  function renderLog() {
+    const ul = $('#logList');
+    if (!log.length) {
+      ul.innerHTML = '<li class="empty">まだ記録はありません</li>';
+      return;
+    }
+    ul.innerHTML = '';
+    [...log].reverse().forEach((e) => {
+      const li = document.createElement('li');
+      if (e.cancelled) li.className = 'cancelled';
+      const t = document.createElement('span');
+      t.className = 't';
+      t.textContent = `${fmtClock(new Date(e.t))}（+${fmtDur(e.t - startAt)}）`;
+      const l = document.createElement('span');
+      l.className = 'l';
+      l.textContent = e.label;
+      li.append(t, l);
+      ul.appendChild(li);
+    });
+  }
+  function logText(data = { startAt, log }) {
+    const s = new Date(data.startAt);
+    const lines = [
+      '救命処置 記録',
+      `開始: ${fmtDate(s)} ${fmtClock(s)}`,
+      ''
+    ];
+    data.log.forEach((e) => {
+      lines.push(`${fmtClock(new Date(e.t))} (+${fmtDur(e.t - data.startAt)})  ${e.label}${e.cancelled ? '  ［取消］' : ''}`);
+    });
+    return lines.join('\n');
+  }
+  function download(blob, name) {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 60000);
+  }
+
+  // ---------- 手順表示 ----------
+  function showStep(id) {
+    const s = STEPS[id];
+    $('#stepNo').textContent = typeof s.no === 'number' ? `手順 ${s.no} / 5` : '観察';
+    $('#stepTitle').textContent = s.title;
+    $('#stepBody').innerHTML = s.body;
+    const box = $('#stepBtns');
+    box.innerHTML = '';
+    s.btns.forEach((b) => {
+      const el = document.createElement(b.tel ? 'a' : 'button');
+      el.className = 'stepBtn' + (b.cls ? ' ' + b.cls : '');
+      el.textContent = b.label;
+      if (b.tel) {
+        el.href = 'tel:119';
+        el.addEventListener('click', () => addLog('119番に発信'));
+      } else {
+        el.addEventListener('click', () => {
+          if (b.log) addLog(b.log);
+          if (b.startCompress) startCompress();
+          if (b.stay && b.log) toast(`「${b.log}」を記録しました`, 1500);
+          if (b.go) showStep(b.go);
+        });
+      }
+      box.appendChild(el);
+    });
+  }
+
+  // ---------- 胸骨圧迫 ----------
+  function startCompress(label = '胸骨圧迫 開始') {
+    if (compressing) return;
+    compressing = true;
+    cycleStart = Date.now();
+    cycleWarned = false;
+    if (pauseStart) {
+      label += `（中断 ${fmtShort(cycleStart - pauseStart)}）`;
+      pauseStart = null;
+    }
+    addLog(label, 'compress');
+    updateCompressBtn();
+    syncMetro();
+  }
+  function pauseCompress(label = '胸骨圧迫 中断') {
+    if (!compressing) return;
+    compressing = false;
+    pauseStart = Date.now();
+    addLog(label, 'pause');
+    updateCompressBtn();
+    syncMetro();
+  }
+  function updateCompressBtn() {
+    const b = $('#compressBtn');
+    if (compressing) {
+      b.textContent = '⏸ 胸骨圧迫 中断';
+      b.classList.remove('red');
+    } else {
+      b.textContent = pauseStart ? '▶ 胸骨圧迫 再開' : '▶ 胸骨圧迫 開始';
+      b.classList.add('red');
+    }
+  }
+  function updateCprPanel(now) {
+    const p = $('#cprPanel');
+    p.classList.toggle('compressing', compressing);
+    p.classList.toggle('paused', !compressing && !!pauseStart);
+    let over = false;
+    if (compressing) {
+      const ms = now - cycleStart;
+      $('#cprState').textContent = '胸骨圧迫中';
+      $('#cprTimer').textContent = fmtShort(ms);
+      over = ms >= CYCLE_SEC * 1000;
+      $('#cprHint').textContent = over
+        ? '2分経過：疲れる前に交代を（AEDは2分ごとに解析）'
+        : '胸の真ん中を 約5cm・1分間に100〜120回';
+      if (over && !cycleWarned) {
+        cycleWarned = true;
+        alertSound();
+        vibrate([200, 100, 200]);
+        toast('2分経過：圧迫者の交代の目安です');
+      }
+    } else if (pauseStart) {
+      $('#cprState').textContent = '中断中';
+      $('#cprTimer').textContent = fmtShort(now - pauseStart);
+      $('#cprHint').textContent = '中断はできるだけ短く（10秒以内が目安）';
+    } else {
+      $('#cprState').textContent = '胸骨圧迫：未開始';
+      $('#cprTimer').textContent = '0:00';
+    }
+    p.classList.toggle('over', over);
+  }
+
+  // ---------- カメラと録画 ----------
+  const video = $('#video');
+  const canvas = $('#canvas');
+  const ctx = canvas.getContext('2d');
+  let camStream = null;
+  let micStream = null;
+  let facing = 'environment';
+  let recorder = null;
+  let chunks = [];
+  let drawTimer = null;
+  let videoBlob = null;
+  let videoExt = 'webm';
+
+  async function openCamera() {
+    if (camStream) camStream.getTracks().forEach((t) => t.stop());
+    camStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: { ideal: facing }, width: { ideal: 1280 }, height: { ideal: 720 } },
+      audio: false
+    });
+    video.srcObject = camStream;
+    await video.play().catch(() => {});
+    if (!video.videoWidth) {
+      await new Promise((r) => video.addEventListener('loadedmetadata', r, { once: true }));
+    }
+  }
+
+  function pickMime() {
+    if (!window.MediaRecorder || !MediaRecorder.isTypeSupported) return '';
+    const list = [
+      'video/mp4;codecs=avc1,mp4a.40.2',
+      'video/mp4',
+      'video/webm;codecs=vp9,opus',
+      'video/webm;codecs=vp8,opus',
+      'video/webm'
+    ];
+    return list.find((m) => MediaRecorder.isTypeSupported(m)) || '';
+  }
+
+  async function startCamera() {
+    $('#camWrap').classList.remove('hidden');
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      $('#camMsg').textContent = 'この環境ではカメラが使えません（https で開く必要があります）。記録ボタンはそのまま使えます。';
+      return;
+    }
+    try {
+      await openCamera();
+    } catch (err) {
+      $('#camMsg').textContent = 'カメラを使えませんでした（許可されていない可能性があります）。記録ボタンはそのまま使えます。';
+      addLog('カメラ起動に失敗');
+      return;
+    }
+    if ($('#optMic').checked) {
+      try {
+        micStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+      } catch (e) {
+        toast('マイクが使えないため、映像のみ撮影します');
+      }
+    }
+
+    // 録画サイズは最初の映像に合わせて固定（長辺 1280）
+    const vw = video.videoWidth || 1280;
+    const vh = video.videoHeight || 720;
+    const k = Math.min(1, 1280 / Math.max(vw, vh));
+    canvas.width = Math.round(vw * k / 2) * 2;
+    canvas.height = Math.round(vh * k / 2) * 2;
+    $('#camMsg').classList.add('hidden');
+
+    drawTimer = setInterval(drawFrame, 1000 / 30);
+    drawFrame();
+
+    if (!canvas.captureStream || !window.MediaRecorder) {
+      toast('この端末では録画できません（プレビューのみ）');
+      return;
+    }
+    const out = canvas.captureStream(30);
+    if (micStream) micStream.getAudioTracks().forEach((t) => out.addTrack(t));
+    const mime = pickMime();
+    videoExt = mime.startsWith('video/mp4') ? 'mp4' : 'webm';
+    try {
+      recorder = new MediaRecorder(out, mime ? { mimeType: mime, videoBitsPerSecond: 2500000 } : undefined);
+    } catch (e) {
+      recorder = new MediaRecorder(out);
+    }
+    chunks = [];
+    recorder.ondataavailable = (ev) => { if (ev.data && ev.data.size) chunks.push(ev.data); };
+    recorder.start(1000);
+    $('#rec').classList.add('on');
+    $('#recText').textContent = 'REC';
+    addLog('撮影開始');
+  }
+
+  function drawFrame() {
+    const W = canvas.width;
+    const H = canvas.height;
+    const now = Date.now();
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, W, H);
+    if (video.readyState >= 2 && video.videoWidth) {
+      const k = Math.min(W / video.videoWidth, H / video.videoHeight);
+      const dw = video.videoWidth * k;
+      const dh = video.videoHeight * k;
+      ctx.drawImage(video, (W - dw) / 2, (H - dh) / 2, dw, dh);
+    }
+    const s = Math.min(W, H) / 720;
+    const font = (px, bold) => `${bold ? 'bold ' : ''}${Math.round(px * s)}px "Hiragino Sans","Yu Gothic","Meiryo",sans-serif`;
+
+    // 上帯：日時と経過時間
+    const bandH = 58 * s;
+    ctx.fillStyle = 'rgba(0,0,0,0.6)';
+    ctx.fillRect(0, 0, W, bandH);
+    ctx.textBaseline = 'middle';
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#fff';
+    ctx.font = font(28, true);
+    const d = new Date(now);
+    ctx.fillText(`${fmtDate(d)} ${fmtClock(d)}   経過 ${fmtDur(now - startAt)}`, 16 * s, bandH / 2);
+
+    // 右上：圧迫状態
+    let st = '';
+    let col = '#fff';
+    if (compressing) { st = `胸骨圧迫中 ${fmtShort(now - cycleStart)}`; col = '#ff5252'; }
+    else if (pauseStart) { st = `中断 ${fmtShort(now - pauseStart)}`; col = '#ffca28'; }
+    if (st) {
+      ctx.textAlign = 'right';
+      ctx.fillStyle = col;
+      ctx.fillText(st, W - 16 * s, bandH / 2);
+    }
+
+    // 下帯：直近の記録
+    const recent = log.filter((e) => !e.cancelled).slice(-3);
+    if (recent.length) {
+      const lineH = 38 * s;
+      const h = lineH * recent.length + 16 * s;
+      ctx.fillStyle = 'rgba(0,0,0,0.6)';
+      ctx.fillRect(0, H - h, W, h);
+      ctx.textAlign = 'left';
+      ctx.font = font(26, false);
+      recent.forEach((e, i) => {
+        ctx.fillStyle = i === recent.length - 1 ? '#ffe082' : '#ddd';
+        ctx.fillText(`${fmtClock(new Date(e.t))}  ${e.label}`, 16 * s, H - h + 8 * s + lineH * (i + 0.5));
+      });
+    }
+  }
+
+  async function flipCamera() {
+    facing = facing === 'environment' ? 'user' : 'environment';
+    try {
+      await openCamera();
+    } catch (e) {
+      toast('カメラを切り替えられませんでした');
+    }
+  }
+
+  function stopRecording() {
+    return new Promise((resolve) => {
+      if (!recorder || recorder.state === 'inactive') return resolve();
+      recorder.onstop = () => {
+        videoBlob = new Blob(chunks, { type: recorder.mimeType || 'video/webm' });
+        resolve();
+      };
+      recorder.stop();
+    });
+  }
+
+  function releaseMedia() {
+    clearInterval(drawTimer);
+    drawTimer = null;
+    [camStream, micStream].forEach((st) => st && st.getTracks().forEach((t) => t.stop()));
+    camStream = micStream = null;
+    video.srcObject = null;
+    $('#rec').classList.remove('on');
+    $('#recText').textContent = '撮影終了';
+  }
+
+  // ---------- 画面を消さない ----------
+  let wakeLock = null;
+  async function keepAwake() {
+    try {
+      if ('wakeLock' in navigator && document.visibilityState === 'visible') {
+        wakeLock = await navigator.wakeLock.request('screen');
+      }
+    } catch (e) {}
+  }
+  document.addEventListener('visibilitychange', () => {
+    if (running && document.visibilityState === 'visible') keepAwake();
+  });
+
+  // ---------- 時計 ----------
+  function tick() {
+    const now = Date.now();
+    $('#elapsed').textContent = fmtDur(now - startAt);
+    $('#clock').textContent = fmtClock(new Date(now));
+    updateCprPanel(now);
+  }
+
+  // ---------- 開始・終了 ----------
+  async function start() {
+    ensureAudio();
+    running = true;
+    startAt = Date.now();
+    log = [];
+    compressing = false;
+    pauseStart = null;
+    cycleStart = null;
+    videoBlob = null;
+    $('#intro').classList.add('hidden');
+    $('#main').classList.remove('hidden');
+    $('#bottombar').classList.remove('hidden');
+    $('#done').classList.add('hidden');
+    $('#stepCard').classList.remove('hidden');
+    $('#rec').classList.remove('on');
+    $('#recText').textContent = '撮影なし';
+    addLog('記録開始');
+    updateCompressBtn();
+    keepAwake();
+    tickTimer = setInterval(tick, 250);
+    tick();
+
+    if ($('#optSkip').checked) {
+      showStep('cpr');
+      startCompress();
+    } else {
+      showStep('safety');
+    }
+    if ($('#optCam').checked) startCamera();
+  }
+
+  async function end() {
+    if (!confirm('記録を終了しますか？\n（撮影も停止します）')) return;
+    if (compressing) pauseCompress('胸骨圧迫 終了');
+    addLog('記録終了');
+    running = false;
+    clearInterval(tickTimer);
+    metroStop();
+    tick();
+    await stopRecording();
+    drawFrame();
+    releaseMedia();
+    try { wakeLock && wakeLock.release(); } catch (e) {}
+    $('#bottombar').classList.add('hidden');
+    $('#stepCard').classList.add('hidden');
+    $('#done').classList.remove('hidden');
+    if (videoBlob && videoBlob.size) {
+      $('#saveVideo').classList.remove('hidden');
+      const pb = $('#playback');
+      pb.src = URL.createObjectURL(videoBlob);
+      pb.classList.remove('hidden');
+    } else {
+      $('#saveVideo').classList.add('hidden');
+      $('#playback').classList.add('hidden');
+    }
+    $('#done').scrollIntoView({ behavior: 'smooth' });
+  }
+
+  // ---------- ボタン ----------
+  $('#startBtn').addEventListener('click', start);
+  $('#endBtn').addEventListener('click', end);
+  $('#flipBtn').addEventListener('click', flipCamera);
+  $('#optMetro').addEventListener('change', syncMetro);
+  $('#opt302').addEventListener('change', () => { if (metroTimer) { metroStop(); syncMetro(); } });
+
+  $('#compressBtn').addEventListener('click', () => {
+    ensureAudio();
+    if (compressing) pauseCompress(); else startCompress(pauseStart ? '胸骨圧迫 再開' : '胸骨圧迫 開始');
+  });
+
+  document.querySelectorAll('.act[data-log], .act[data-act]').forEach((b) => {
+    if (b.id === 'compressBtn') return;
+    b.addEventListener('click', () => {
+      ensureAudio();
+      const act = b.dataset.act;
+      const label = b.dataset.log;
+      vibrate(30);
+      switch (act) {
+        case 'memo': {
+          const m = prompt('メモを入力（例：意識レベル、薬、状況など）');
+          if (m && m.trim()) addLog('メモ：' + m.trim());
+          return;
+        }
+        case 'undo': {
+          const last = [...log].reverse().find((e) => !e.cancelled && e.kind !== 'system');
+          if (!last) return;
+          if (!confirm(`直前の記録「${last.label}」を取り消しますか？\n（記録には取消として残ります）`)) return;
+          last.cancelled = true;
+          addLog(`取消：${last.label}`, 'system');
+          return;
+        }
+        case 'analyze':
+          if (compressing) pauseCompress(label);
+          else addLog(label);
+          toast('解析中：誰も体に触れないで！');
+          return;
+        case 'shock':
+          addLog(label);
+          startCompress('ショック後 胸骨圧迫 再開');
+          showStep('cpr');
+          toast('ただちに胸骨圧迫を再開！');
+          return;
+        case 'noshock':
+          addLog(label);
+          startCompress('胸骨圧迫 再開');
+          showStep('cpr');
+          toast('ただちに胸骨圧迫を再開！');
+          return;
+        case 'swap':
+          addLog(label);
+          if (compressing) { cycleStart = Date.now(); cycleWarned = false; }
+          return;
+        case 'rosc':
+          if (compressing) pauseCompress('胸骨圧迫 中止');
+          addLog(label);
+          showStep('observe');
+          return;
+        default:
+          addLog(label);
+          toast(`「${label}」を記録しました`, 1500);
+      }
+    });
+  });
+
+  $('#saveLog').addEventListener('click', () => {
+    download(new Blob([logText()], { type: 'text/plain;charset=utf-8' }), `救命記録_${stamp(new Date(startAt))}.txt`);
+  });
+  $('#copyLog').addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(logText());
+      toast('記録をコピーしました');
+    } catch (e) {
+      toast('コピーできませんでした');
+    }
+  });
+  $('#saveVideo').addEventListener('click', () => {
+    if (videoBlob) download(videoBlob, `救命記録_${stamp(new Date(startAt))}.${videoExt}`);
+  });
+  $('#restart').addEventListener('click', () => {
+    $('#main').classList.add('hidden');
+    $('#intro').classList.remove('hidden');
+    checkPrev();
+    window.scrollTo(0, 0);
+  });
+
+  window.addEventListener('beforeunload', (e) => {
+    if (running) { e.preventDefault(); e.returnValue = ''; }
+  });
+
+  // 前回の記録（ページを閉じてしまった時の保険）
+  function checkPrev() {
+    let prev = null;
+    try { prev = JSON.parse(localStorage.getItem(STORE_KEY) || 'null'); } catch (e) {}
+    const btn = $('#prevLog');
+    if (prev && prev.log && prev.log.length) {
+      btn.classList.remove('hidden');
+      btn.textContent = `前回の記録（${fmtDate(new Date(prev.startAt))} ${fmtClock(new Date(prev.startAt))}〜）をテキストで保存`;
+      btn.onclick = () => download(
+        new Blob([logText(prev)], { type: 'text/plain;charset=utf-8' }),
+        `救命記録_${stamp(new Date(prev.startAt))}.txt`
+      );
+    } else {
+      btn.classList.add('hidden');
+    }
+  }
+  checkPrev();
+})();
+</script>
+</body>
+</html>
